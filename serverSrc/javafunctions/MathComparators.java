@@ -28,24 +28,42 @@ import org.voltdb.VoltProcedure.VoltAbortException;
 
 public class MathComparators {
     
-   public double least (double value1, double value2) throws VoltAbortException {
-        
+    /**
+     * 
+     * Return the lesser of the two values. Note that null will always win.
+     * 
+     * @param value1
+     * @param value2
+     * @return lesser of value1 or value2
+     * @throws VoltAbortException
+     */
+    public double least(double value1, double value2) throws VoltAbortException {
+
         if (value1 < value2) {
             return value1;
         }
-        
+
         return value2;
-        
+
     }
 
-   public double greatest (double value1, double value2) throws VoltAbortException {
-        
+    /**
+     * 
+     * Return the greater of the two values. Note that null will always lose.
+     * 
+     * @param value1
+     * @param value2
+     * @return greater of value1 or value2
+     * @throws VoltAbortException
+     */
+    public double greatest(double value1, double value2) throws VoltAbortException {
+
         if (value1 > value2) {
             return value1;
         }
-        
+
         return value2;
-        
+
     }
 
     

@@ -55,7 +55,7 @@ import org.voltdb.VoltTable;
 import org.voltdb.types.TimestampType;
 
 /**
- *
+ * Called by a task that runs every second or so.
  */
 public class CloseStaleSessions extends VoltProcedure {
 
@@ -100,24 +100,38 @@ public class CloseStaleSessions extends VoltProcedure {
      
  // @formatter:on
 
+    /**
+     *  Procedure to find oldest sessionBatchSize sessions and close them
+     *  if they are older than maxSessionSeconds
+     * 
+     * @param maxSessionSeconds
+     * @param sessionBatchSize
+     * @return
+     * @throws VoltAbortException
+     */
     public VoltTable[] run(int maxSessionSeconds, int sessionBatchSize) throws VoltAbortException {
 
 
         final TimestampType cutoffDate = new TimestampType(
                 new Date(this.getTransactionTime().getTime() - (maxSessionSeconds * 1000)));
         
+        // Find the 'sessionBatchSize' oldest sessions. They may
+        // or may not be old enough to be stale...
         voltQueueSQL(getStaleSessions,sessionBatchSize);
         final VoltTable sessionRecords = voltExecuteSQL()[0];
 
+        // Walk through our list of records in time order...
         while (sessionRecords.advanceRow()) {
 
             String cardId = sessionRecords.getString("cardid");
             TimestampType lastUpdateDate = sessionRecords.getTimestampAsTimestamp("last_update_date");
 
+            // If the record is older than the cutoff date stop...
             if (cutoffDate.asExactJavaDate().before(lastUpdateDate.asExactJavaDate())) {
                 break;
             }
 
+            // Close this session and remove it because it's stale...
             voltQueueSQL(recordWindowValues, cardId);
             voltQueueSQL(clearEventTop20, cardId);
 

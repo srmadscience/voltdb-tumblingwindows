@@ -29,8 +29,33 @@ import java.util.Date;
 import org.voltdb.VoltProcedure.VoltAbortException;
 import org.voltdb.types.TimestampType;
 
+/**
+ * This is a VoltDB function that allows you to truncate TimeStamps to arbitrarily long 
+ * time periods, relative to an arbitary start point. For example, I can round down all 
+ * dates to 5 minute blocks, starting at 27 seconds past the minute.
+ * <p>
+ * While this seems esoteric, it's reallty useful if you need to group time based data
+ * by arbitrary intervals.
+ *
+ */
 public class ArbitraryTruncate {
     
+    /**
+     * Truncate an input TimestampType to an arbitrarily long time period, relative
+     * to a known starting date. 
+     * <p>
+     * For example:
+     * <p>
+     * arbitraryTruncateWithBaseTime('10-Jan-21 15:21:37',300000,'1-Jan-21 00:00:27') 
+     * will return '10-Jan-21 15:20:27', because it's working with 5 minute (300,000ms) blocks, starting at 27 seconds 
+     * past midnight.
+     * 
+     * @param value - The value you wish to truncate
+     * @param intervalMs - Length of your arbitrary time period in ms
+     * @param knownBoundary - An arbitrary historical date when this set of time periods started
+     * @return A new timestamp
+     * @throws VoltAbortException - if any of the input values are null or meaningless
+     */
     public TimestampType arbitraryTruncateWithBaseTime (TimestampType value, long intervalMs, TimestampType knownBoundary) throws VoltAbortException {
         
         if (intervalMs == Long.MIN_VALUE) {
@@ -69,7 +94,21 @@ public class ArbitraryTruncate {
          
      }
 
-    public TimestampType arbitraryTruncate (TimestampType value, long intervalMs) throws VoltAbortException {
+    /**
+     * Truncate an input TimestampType to an arbitrarily long time period, relative
+     * to midnight. 
+     * <p>
+     * For example:
+     * <p>
+     * arbitraryTruncateWithBaseTime('10-Jan-21 15:21:37',300000) 
+     * will return '10-Jan-21 15:20:00', because it's working with 5 minute (300,000ms) blocks.
+     * 
+     * @param value - The value you wish to truncate
+     * @param intervalMs - Length of your arbitrary time period in ms
+     * @return A new timestamp
+     * @throws VoltAbortException - if any of the input values are null or meaningless
+     */
+   public TimestampType arbitraryTruncate (TimestampType value, long intervalMs) throws VoltAbortException {
         
         final TimestampType knownBoundary = new TimestampType(new Date(0));
         

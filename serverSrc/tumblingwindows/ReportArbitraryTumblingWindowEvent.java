@@ -29,12 +29,11 @@ import org.voltdb.VoltTable;
 import org.voltdb.types.TimestampType;
 
 /**
- *
+ * Procedure to update running totals for a card for an arbitrary length time periods
  */
 public class ReportArbitraryTumblingWindowEvent extends VoltProcedure {
 
     // @formatter:off
-
 
     public static final SQLStmt createEvent = new SQLStmt(
             "insert into cc_event_arbitrary_tumbling_window (report_time"
@@ -45,20 +44,36 @@ public class ReportArbitraryTumblingWindowEvent extends VoltProcedure {
     public static final SQLStmt updateEvent = new SQLStmt(
             "update cc_event_arbitrary_tumbling_window "
             + "set total_txn_amount = total_txn_amount + ?"
-            + "  , how_many = how_many + 1"
+            + "  , how_many = how_many + 1 "
             + "where cardid = ? "
             + "and   report_time = arbitraryTruncateWithBaseTime(?,?,?);");
 
     // @formatter:on
 
+    /**
+     * Store an event for a single card. Generate an output record
+     * based on Total value, number of events or time sicne we last
+     * wrote a record.
+     * 
+     * @param cardId
+     * @param txnId
+     * @param txnAmount
+     * @param storeId
+     * @param intervalMs
+     * @param knownBoundary
+     * @return
+     * @throws VoltAbortException
+     */
     public VoltTable[] run(String cardId, long txnId, double txnAmount, long storeId, long intervalMs,
             TimestampType knownBoundary) throws VoltAbortException {
 
+        // Attempt to update existing record that contains running total. 
         voltQueueSQL(updateEvent, txnAmount, cardId, this.getTransactionTime(), intervalMs, knownBoundary);
 
         final VoltTable updateResultTable = voltExecuteSQL()[0];
 
         if (updateResultTable.advanceRow() && updateResultTable.getLong("modified_tuples") == 0) {
+            // No Record found, so we create one.
             voltQueueSQL(createEvent, this.getTransactionTime(), intervalMs, knownBoundary, cardId, txnAmount);
         }
 

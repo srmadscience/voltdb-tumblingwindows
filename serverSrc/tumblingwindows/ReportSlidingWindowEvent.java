@@ -30,7 +30,7 @@ import org.voltdb.VoltTable;
 
 
 /**
- *
+ * Store an event for a single card, but compute rolling stats for the last 20.
  */
 public class ReportSlidingWindowEvent extends VoltProcedure {
 
@@ -98,6 +98,7 @@ public class ReportSlidingWindowEvent extends VoltProcedure {
 	   
 	public VoltTable[] run(String cardId, long txnId , double txnAmount ,long storeId ) throws VoltAbortException {
 
+	    // Recorf event and update rolling top 20
         voltQueueSQL(createEvent, cardId,txnId,txnAmount,storeId);
         voltQueueSQL(updateEventTop20, txnAmount, cardId);
 		
@@ -106,10 +107,11 @@ public class ReportSlidingWindowEvent extends VoltProcedure {
 		final VoltTable updateResultTable  = sessionRecords[1];
 		
 		if (updateResultTable.advanceRow() && updateResultTable.getLong("modified_tuples") == 0) {
+		       // No record existed, so create one
 		       voltQueueSQL(createEventTop20, cardId,txnAmount);
 		}
 
-		
+		// Write output record
 		voltQueueSQL(recordWindowValues, cardId);
         return voltExecuteSQL(true);
 		

@@ -55,7 +55,7 @@ import org.voltdb.VoltTable;
 import org.voltdb.types.TimestampType;
 
 /**
- *
+ * Store an event for a single card, but compute rolling stats for the last 20.
  */
 public class ReportSessionWindowEvent extends VoltProcedure {
 
