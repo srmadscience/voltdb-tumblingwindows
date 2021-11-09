@@ -38,6 +38,7 @@ import org.voltdb.client.ProcCallException;
 
 public class TumbleDataGenerator {
 
+    public final static String ARBITRARYTUMBLE = "ARBITRARYTUMBLE";
     public final static String TUMBLE = "TUMBLE";
     public final static String HOP = "HOP";
     public final static String SLIDE = "SLIDE";
@@ -91,10 +92,13 @@ public class TumbleDataGenerator {
 
                 long amount = r.nextInt(1000);
                 long store = r.nextInt(100);
-
+                
                 if (goal.equalsIgnoreCase(HOP) || goal.equalsIgnoreCase(TUMBLE)) {
                     voltClient.callProcedure(coec, "cc_event_stream.INSERT", randomCardNumber, new Date(), recordCount,
                             amount, store);
+                } else if (goal.equalsIgnoreCase(ARBITRARYTUMBLE)) {
+                    voltClient.callProcedure(coec, "ReportArbitraryTumblingWindowEvent", randomCardNumber, recordCount, amount,
+                            store, 300 * 1000, new Date(27000));
                 } else if (goal.equalsIgnoreCase(SLIDE)) {
                     voltClient.callProcedure(coec, "ReportSlidingWindowEvent", randomCardNumber, recordCount, amount,
                             store);
@@ -155,7 +159,7 @@ public class TumbleDataGenerator {
 
         if (args.length != 6) {
             msg("Usage: TumbleDataGenerator hostnames userCount tpMs durationSeconds offset goal");
-            msg("where 'goal' is one of " + TUMBLE + " " + HOP + " " + SLIDE + " or " + SESSION);
+            msg("where 'goal' is one of " + TUMBLE + " " + ARBITRARYTUMBLE + " " + HOP + " " + SLIDE + " or " + SESSION);
             System.exit(1);
         }
 
@@ -256,7 +260,11 @@ public class TumbleDataGenerator {
                         + testCardId + "' order by TXN_TIME;");
                 cr[1] = voltClient.callProcedure("@AdHoc", " select * from CC_EVENT_TUMBLING_WINDOW where cardid = '"
                         + testCardId + "' order by REPORT_TIME;");
-            } else if (goal.equalsIgnoreCase(SLIDE)) {
+            } else if (goal.equalsIgnoreCase(ARBITRARYTUMBLE)) {
+                cr = new ClientResponse[1];
+                cr[0] = voltClient.callProcedure("@AdHoc", " select * from cc_event_arbitrary_tumbling_window where cardid = '"
+                        + testCardId + "' order by REPORT_TIME;");
+           } else if (goal.equalsIgnoreCase(SLIDE)) {
                 cr = new ClientResponse[1];
                 cr[0] = voltClient.callProcedure("@AdHoc", " select * from CC_EVENT_SLIDING_WINDOW where cardid = '"
                         + testCardId + "' order by REPORT_TIME;");

@@ -6,6 +6,8 @@ DROP TASK stale_session_task IF EXISTS;
 DROP TASK tumbling_window_task IF EXISTS;
 DROP TASK hopping_window_task IF EXISTS;
 
+DROP PROCEDURE ReportArbitraryTumblingWindowEvent IF EXISTS;
+
 DROP PROCEDURE ReportSlidingWindowEvent IF EXISTS;
 
 DROP PROCEDURE ReportSessionWindowEvent IF EXISTS;
@@ -24,6 +26,8 @@ DROP VIEW cc_event_session_window_reasons IF EXISTS;
 
 
 DROP TABLE cc_event_tumbling_window IF EXISTS;
+
+DROP TABLE cc_event_arbitrary_tumbling_window IF EXISTS;
 
 DROP TABLE cc_event_hopping_window IF EXISTS;
 
@@ -86,6 +90,18 @@ CREATE TABLE cc_event_tumbling_window
 );
 
 PARTITION TABLE cc_event_tumbling_window ON COLUMN cardid;
+
+CREATE TABLE cc_event_arbitrary_tumbling_window
+(report_time timestamp not null
+,cardid varchar(16) not null 
+,total_txn_amount       decimal not null
+,how_many        bigint not null
+,primary key (cardid,report_time)
+);
+
+PARTITION TABLE cc_event_arbitrary_tumbling_window ON COLUMN cardid;
+
+
 
 CREATE TABLE cc_event_hopping_window
 (report_time timestamp default now
@@ -190,10 +206,15 @@ CREATE PROCEDURE
 CREATE PROCEDURE  
    PARTITION ON TABLE cc_event_stream COLUMN cardid
    FROM CLASS tumblingwindows.ReportSessionWindowEvent;  
+   
+CREATE PROCEDURE  
+   PARTITION ON TABLE cc_event_stream COLUMN cardid
+   FROM CLASS tumblingwindows.ReportArbitraryTumblingWindowEvent;
 
 CREATE PROCEDURE  
    DIRECTED
    FROM CLASS tumblingwindows.CloseStaleSessions;  
+   
    
  
 CREATE TASK stale_session_task ON SCHEDULE EVERY 1 SECONDS 
