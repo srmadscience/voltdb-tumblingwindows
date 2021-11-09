@@ -1,0 +1,7 @@
+<topics enabled="true">
+<topic name="incoming_cdrs" procedure="HandleMediationCDR">
+</topic>
+<topic name="bad_cdrs"/>
+<topic name="unaggregated_cdrs"/>
+<topic name="aggregated_cdrs"/>
+</topics>
