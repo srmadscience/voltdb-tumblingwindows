@@ -1,5 +1,5 @@
 
-file -inlinebatch END_OF_BATCH
+file -inlinebatch END_OF_REMOVEBATCH
 
 DROP TASK stale_session_task IF EXISTS;
 DROP TASK tumbling_window_task IF EXISTS;
@@ -44,4 +44,4 @@ DROP FUNCTION LEAST IF EXISTS;
 DROP FUNCTION arbitraryTruncateWithBaseTime IF EXISTS;
 DROP FUNCTION arbitraryTruncate             IF EXISTS;
 
-END_OF_BATCH
+END_OF_REMOVEBATCH

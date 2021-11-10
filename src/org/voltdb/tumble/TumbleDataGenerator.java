@@ -28,13 +28,10 @@ import java.text.SimpleDateFormat;
 import java.util.Date;
 import java.util.Random;
 
-import org.voltdb.VoltTable;
 import org.voltdb.client.Client;
 import org.voltdb.client.ClientConfig;
 import org.voltdb.client.ClientFactory;
 import org.voltdb.client.ClientResponse;
-import org.voltdb.client.NoConnectionsException;
-import org.voltdb.client.ProcCallException;
 
 public class TumbleDataGenerator {
 
@@ -53,7 +50,8 @@ public class TumbleDataGenerator {
     long startMs;
     String goal;
 
-    Random r = new Random(42);
+    // Note that we generate the same 'random' values each time we run
+    Random r = new Random(42); 
 
     public TumbleDataGenerator(String hostnames, int userCount, int tpMs, int durationSeconds, String goal)
             throws Exception {
@@ -92,13 +90,13 @@ public class TumbleDataGenerator {
 
                 long amount = r.nextInt(1000);
                 long store = r.nextInt(100);
-                
+
                 if (goal.equalsIgnoreCase(HOP) || goal.equalsIgnoreCase(TUMBLE)) {
                     voltClient.callProcedure(coec, "cc_event_stream.INSERT", randomCardNumber, new Date(), recordCount,
                             amount, store);
                 } else if (goal.equalsIgnoreCase(ARBITRARYTUMBLE)) {
-                    voltClient.callProcedure(coec, "ReportArbitraryTumblingWindowEvent", randomCardNumber, recordCount, amount,
-                            store, 300 * 1000, new Date(27000));
+                    voltClient.callProcedure(coec, "ReportArbitraryTumblingWindowEvent", randomCardNumber, recordCount,
+                            amount, store, 300 * 1000, new Date(27000));
                 } else if (goal.equalsIgnoreCase(SLIDE)) {
                     voltClient.callProcedure(coec, "ReportSlidingWindowEvent", randomCardNumber, recordCount, amount,
                             store);
@@ -154,12 +152,78 @@ public class TumbleDataGenerator {
         }
 
     }
+    
+    /**
+     * Check VoltDB to see how things are going...
+     *
+     * @param client
+     * @param nextCdr
+     */
+    public void printApplicationStats() {
+
+        final String testCardId = "Card42";
+
+        try {
+            voltClient.drain();
+
+            ClientResponse cr[] = null;
+
+            if (goal.equalsIgnoreCase(HOP)) {
+                cr = new ClientResponse[2];
+                cr[0] = voltClient.callProcedure("@AdHoc", " select * from CC_EVENT_BY_CARD_BY_MINUTE where cardid = '"
+                        + testCardId + "' order by TXN_TIME;");
+                cr[1] = voltClient.callProcedure("@AdHoc", " select * from CC_EVENT_HOPPING_WINDOW where cardid = '"
+                        + testCardId + "' order by REPORT_TIME;");
+            } else if (goal.equalsIgnoreCase(TUMBLE)) {
+                cr = new ClientResponse[2];
+                cr[0] = voltClient.callProcedure("@AdHoc", " select * from CC_EVENT_BY_CARD_BY_MINUTE where cardid = '"
+                        + testCardId + "' order by TXN_TIME;");
+                cr[1] = voltClient.callProcedure("@AdHoc", " select * from CC_EVENT_TUMBLING_WINDOW where cardid = '"
+                        + testCardId + "' order by REPORT_TIME;");
+            } else if (goal.equalsIgnoreCase(ARBITRARYTUMBLE)) {
+                cr = new ClientResponse[1];
+                cr[0] = voltClient.callProcedure("@AdHoc",
+                        " select * from cc_event_arbitrary_tumbling_window where cardid = '" + testCardId
+                                + "' order by REPORT_TIME;");
+            } else if (goal.equalsIgnoreCase(SLIDE)) {
+                cr = new ClientResponse[1];
+                cr[0] = voltClient.callProcedure("@AdHoc", " select * from CC_EVENT_SLIDING_WINDOW where cardid = '"
+                        + testCardId + "' order by REPORT_TIME;");
+            } else if (goal.equalsIgnoreCase(SESSION)) {
+                cr = new ClientResponse[2];
+                cr[0] = voltClient.callProcedure("@AdHoc",
+                        " select * from CC_EVENT_LAST_20 where cardid = '" + testCardId + "';");
+                cr[1] = voltClient.callProcedure("@AdHoc", " select * from CC_EVENT_SESSION_WINDOW where cardid = '"
+                        + testCardId + "' order by REPORT_TIME;");
+            } else {
+                msg("Unknown goal of " + goal);
+                System.exit(1);
+            }
+
+            if (cr != null) {
+                msg("");
+                msg("Results for " + testCardId);
+                for (ClientResponse element : cr) {
+                    if (element.getStatus() == ClientResponse.SUCCESS) {
+                        for (int j = 0; j < element.getResults().length; j++) {
+                            msg("\n" + element.getResults()[j].toFormattedString());
+                        }
+                    }
+                }
+            }
+
+        } catch (Exception e) {
+            msg("Error:" + e.getMessage());
+        }
+
+    }
 
     public static void main(String[] args) throws Exception {
 
         if (args.length != 6) {
             msg("Usage: TumbleDataGenerator hostnames userCount tpMs durationSeconds offset goal");
-            msg("where 'goal' is one of " + TUMBLE + " " + ARBITRARYTUMBLE + " " + HOP + " " + SLIDE + " or " + SESSION);
+            msg("where 'goal' is one of " + TUMBLE + " " + ARBITRARYTUMBLE + " " + HOP + " " + SLIDE + " or "
+                    + SESSION);
             System.exit(1);
         }
 
@@ -233,70 +297,6 @@ public class TumbleDataGenerator {
 
     }
 
-    /**
-     * Check VoltDB to see how things are going...
-     *
-     * @param client
-     * @param nextCdr
-     */
-    public void printApplicationStats() {
-
-        final String testCardId = "Card42";
-
-        try {
-            voltClient.drain();
-
-            ClientResponse cr[] = null;
-
-            if (goal.equalsIgnoreCase(HOP)) {
-                cr = new ClientResponse[2];
-                cr[0] = voltClient.callProcedure("@AdHoc", " select * from CC_EVENT_BY_CARD_BY_MINUTE where cardid = '"
-                        + testCardId + "' order by TXN_TIME;");
-                cr[1] = voltClient.callProcedure("@AdHoc", " select * from CC_EVENT_HOPPING_WINDOW where cardid = '"
-                        + testCardId + "' order by REPORT_TIME;");
-            } else if (goal.equalsIgnoreCase(TUMBLE)) {
-                cr = new ClientResponse[2];
-                cr[0] = voltClient.callProcedure("@AdHoc", " select * from CC_EVENT_BY_CARD_BY_MINUTE where cardid = '"
-                        + testCardId + "' order by TXN_TIME;");
-                cr[1] = voltClient.callProcedure("@AdHoc", " select * from CC_EVENT_TUMBLING_WINDOW where cardid = '"
-                        + testCardId + "' order by REPORT_TIME;");
-            } else if (goal.equalsIgnoreCase(ARBITRARYTUMBLE)) {
-                cr = new ClientResponse[1];
-                cr[0] = voltClient.callProcedure("@AdHoc", " select * from cc_event_arbitrary_tumbling_window where cardid = '"
-                        + testCardId + "' order by REPORT_TIME;");
-           } else if (goal.equalsIgnoreCase(SLIDE)) {
-                cr = new ClientResponse[1];
-                cr[0] = voltClient.callProcedure("@AdHoc", " select * from CC_EVENT_SLIDING_WINDOW where cardid = '"
-                        + testCardId + "' order by REPORT_TIME;");
-            } else if (goal.equalsIgnoreCase(SESSION)) {
-                cr = new ClientResponse[2];
-                cr[0] = voltClient.callProcedure("@AdHoc",
-                        " select * from CC_EVENT_LAST_20 where cardid = '" + testCardId + "';");
-                cr[1] = voltClient.callProcedure("@AdHoc", " select * from CC_EVENT_SESSION_WINDOW where cardid = '"
-                        + testCardId + "' order by REPORT_TIME;");
-            } else {
-                msg("Unknown goal of " + goal);
-                System.exit(1);
-            }
-
-            if (cr != null) {
-                msg("");
-                msg("Results for " + testCardId);
-                for (int i = 0; i < cr.length; i++) {
-                    if (cr[i].getStatus() == ClientResponse.SUCCESS) {
-                        for (int j = 0; j < cr[i].getResults().length; j++) {
-                            msg("\n" + cr[i].getResults()[j].toFormattedString());
-                        }
-                    }
-                }
-            }
-
-        } catch (Exception e) {
-            msg("Error:" + e.getMessage());
-        }
-
-
-
-    }
+  
 
 }
