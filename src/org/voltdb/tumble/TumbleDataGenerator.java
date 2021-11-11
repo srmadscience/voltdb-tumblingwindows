@@ -47,7 +47,6 @@ public class TumbleDataGenerator {
     int userCount;
     int tpMs;
     int durationSeconds;
-    long startMs;
     String goal;
 
     // Note that we generate the same 'random' values each time we run
@@ -72,9 +71,9 @@ public class TumbleDataGenerator {
 
     public void run(int offset) {
 
-        startMs = System.currentTimeMillis();
-
+        long startMs = System.currentTimeMillis();
         long currentMs = System.currentTimeMillis();
+        
         int tpThisMs = 0;
         long recordCount = 0;
 

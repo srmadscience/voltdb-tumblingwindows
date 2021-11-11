@@ -33,7 +33,7 @@ group by cardid, truncate(MINUTE, txn_time) ;
 
 create index cc_event_by_card_by_minute_ix1 on cc_event_by_card_by_minute(txn_time, cardid);
 
-
+-- This can also be a STREAM...
 CREATE TABLE cc_event_tumbling_window
 (report_time timestamp default now
 ,cardid varchar(16) not null 
@@ -44,6 +44,9 @@ CREATE TABLE cc_event_tumbling_window
 
 PARTITION TABLE cc_event_tumbling_window ON COLUMN cardid;
 
+-- This could have MIGRATE/TTL enabled, but pay attention 
+-- to when MIGRATE/TTL happens, as it needs to be after the record
+-- will no longer be written to
 CREATE TABLE cc_event_arbitrary_tumbling_window
 (report_time timestamp not null
 ,cardid varchar(16) not null 
@@ -55,7 +58,7 @@ CREATE TABLE cc_event_arbitrary_tumbling_window
 PARTITION TABLE cc_event_arbitrary_tumbling_window ON COLUMN cardid;
 
 
-
+-- This can also be a STREAM...
 CREATE TABLE cc_event_hopping_window
 (report_time timestamp default now
 ,cardid varchar(16) not null 
@@ -98,6 +101,7 @@ PARTITION TABLE cc_event_last_20 ON COLUMN cardid;
 
 CREATE INDEX cc_event_last_20_ix1 ON cc_event_last_20(last_update_date, cardid);
 
+-- This can also be a STREAM...
 CREATE TABLE cc_event_sliding_window
 (report_time timestamp default now
 ,cardid varchar(16) not null 
@@ -109,7 +113,7 @@ CREATE TABLE cc_event_sliding_window
 
 PARTITION TABLE cc_event_sliding_window ON COLUMN cardid;
 
-
+-- This can also be a STREAM...
 CREATE TABLE cc_event_session_window
 (report_time timestamp default now
 ,cardid varchar(16) not null 
