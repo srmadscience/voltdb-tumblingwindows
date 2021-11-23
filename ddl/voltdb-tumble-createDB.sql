@@ -133,6 +133,62 @@ GROUP BY record_reason;
 
 
 
+-- 
+-- Used by Arbitrary aggregation example
+--
+CREATE STREAM cc_agg_attribute_stream
+PARTITION ON COLUMN cardid
+(cardid varchar(16) not null 
+,txn_time timestamp default now
+,txn_id   varchar(16) not null
+,txn_amount         decimal not null 
+,txn_kind varchar(16) not null 
+,txn_tag1    varchar(10)   not null
+,txn_tag2    varchar(10)   
+,txn_tag3    varchar(10)   
+,txn_tag4    varchar(10)   
+,txn_tag1_value    bigint   
+,txn_tag2_value     bigint   
+,txn_tag3_value     bigint   
+,txn_tag4_value     bigint   
+);
+
+-- 
+-- Used by Arbitrary aggregation example
+--
+CREATE VIEW cc_agg_attribute_table_totals AS
+SELECT cardid
+     , txn_kind
+     ,truncate(MINUTE,txn_time) txn_time
+     ,txn_tag1
+     ,txn_tag2
+     ,txn_tag3
+     ,txn_tag4
+     , count(*) how_many
+     , sum(txn_tag1_value) txn_tag1_value
+     , sum(txn_tag2_value) txn_tag2_value
+     , sum(txn_tag3_value) txn_tag3_value
+     , sum(txn_tag4_value) txn_tag4_value
+     , sum(txn_amount) how_much
+FROM cc_agg_attribute_stream
+GROUP BY cardid
+       ,txn_kind
+       ,truncate(MINUTE,txn_time)
+       ,txn_tag1
+       ,txn_tag2
+       ,txn_tag3
+       ,txn_tag4;
+       
+CREATE TABLE cc_agg_alert
+(cardid varchar(16) not null 
+,alert_code varchar(16) 
+,first_seen_time timestamp default now
+,txn_time timestamp default now
+,message varchar(1024) not null
+,primary key (cardid,alert_code));
+
+PARTITION TABLE cc_agg_alert ON COLUMN cardid;
+
 CREATE PROCEDURE tumbling_window DIRECTED AS
 INSERT INTO cc_event_tumbling_window (report_time,cardid,  avg_txn_amount, total_txn_amount, how_many) 
 SELECT NOW,cardid,sum(sum_txn_amount) / sum(how_many) , sum(how_many), count(*)
@@ -155,7 +211,6 @@ CREATE TASK hopping_window_task ON SCHEDULE EVERY 1 MINUTES
 PROCEDURE hopping_window WITH (-6,-1)
 RUN ON PARTITIONS;
 
-
 CREATE PROCEDURE  
    PARTITION ON TABLE cc_event_stream COLUMN cardid
    FROM CLASS tumblingwindows.ReportSlidingWindowEvent;  
@@ -167,12 +222,14 @@ CREATE PROCEDURE
 CREATE PROCEDURE  
    PARTITION ON TABLE cc_event_stream COLUMN cardid
    FROM CLASS tumblingwindows.ReportArbitraryTumblingWindowEvent;
+   
+CREATE PROCEDURE
+    PARTITION ON TABLE cc_event_stream COLUMN cardid
+FROM CLASS arbitraryattributes.ReportArbitraryEvent;
 
 CREATE PROCEDURE  
    DIRECTED
-   FROM CLASS tumblingwindows.CloseStaleSessions;  
-   
-   
+   FROM CLASS tumblingwindows.CloseStaleSessions;   
  
 CREATE TASK stale_session_task ON SCHEDULE EVERY 1 SECONDS 
 PROCEDURE CloseStaleSessions WITH (120,100)

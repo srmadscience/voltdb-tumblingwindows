@@ -40,7 +40,7 @@ public class ComplainOnErrorCallback implements ProcedureCallback {
     public void clientCallback(ClientResponse arg0) throws Exception {
         
         if (arg0.getStatus() != ClientResponse.SUCCESS) {
-        	TumbleDataGenerator.msg("Error Code " + arg0.getStatusString());
+        	ArbitraryDataGenerator.msg("Error Code " + arg0.getStatusString());
         }
 
     }

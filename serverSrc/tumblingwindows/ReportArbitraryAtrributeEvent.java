@@ -31,7 +31,7 @@ import org.voltdb.types.TimestampType;
 /**
  * Procedure to update running totals for a card for an arbitrary length time periods
  */
-public class ReportArbitraryTumblingWindowEvent extends VoltProcedure {
+public class ReportArbitraryAtrributeEvent extends VoltProcedure {
 
     // @formatter:off
 

@@ -5,6 +5,8 @@ DROP TASK stale_session_task IF EXISTS;
 DROP TASK tumbling_window_task IF EXISTS;
 DROP TASK hopping_window_task IF EXISTS;
 
+DROP PROCEDURE ReportArbitraryEvent IF EXISTS;
+
 DROP PROCEDURE ReportSlidingWindowEvent IF EXISTS;
 
 DROP PROCEDURE ReportSessionWindowEvent IF EXISTS;
@@ -16,6 +18,8 @@ DROP PROCEDURE CloseStaleSessions IF EXISTS;
 DROP PROCEDURE hopping_window IF EXISTS;
 
 DROP PROCEDURE tumbling_window IF EXISTS;
+
+DROP VIEW cc_agg_attribute_table_totals IF EXISTS;
 
 DROP VIEW cc_event_by_card_by_minute IF EXISTS;
 
@@ -38,6 +42,10 @@ DROP TABLE cc_event_last_20 IF EXISTS;
 DROP STREAM cc_event_stream IF EXISTS;
 
 DROP TABLE cc_event_table IF EXISTS;
+
+DROP TABLE cc_agg_alert IF EXISTS;
+
+DROP STREAM cc_agg_attribute_stream IF EXISTS;
 
 DROP FUNCTION GREATEST IF EXISTS;
 DROP FUNCTION LEAST IF EXISTS;
