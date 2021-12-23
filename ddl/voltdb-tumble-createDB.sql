@@ -221,7 +221,7 @@ CREATE PROCEDURE
    
 CREATE PROCEDURE  
    PARTITION ON TABLE cc_event_stream COLUMN cardid
-   FROM CLASS tumblingwindows.ReportArbitraryTumblingWindowEvent;
+   FROM CLASS tumblingwindows.ReportArbitraryAtrributeEvent;
    
 CREATE PROCEDURE
     PARTITION ON TABLE cc_event_stream COLUMN cardid
